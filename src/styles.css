@@ -170,6 +170,8 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 .feedback-title > span { width: 29px; height: 29px; display: grid; place-items: center; border-radius: 50%; background: var(--success); color: white; font: 600 14px var(--code); }
 .needs-work .feedback-title > span { background: var(--warning); }
 .feedback-title h2 { margin: 0; font-size: 17px; letter-spacing: -.02em; }
+.retry-guidance { max-width: 570px; margin: 14px 0 0 40px; color: #6f512d; font-size: 13px; line-height: 1.55; text-wrap: pretty; }
+.retry-button { min-width: 150px; }
 .explanation { margin-top: 18px; padding-top: 17px; border-top: 1px solid rgba(32,33,31,.1); }
 .explanation span { color: var(--ink-soft); font: 600 9px var(--code); letter-spacing: .12em; text-transform: uppercase; }
 .explanation p { margin: 7px 0 0; line-height: 1.55; font-size: 14px; }
@@ -241,6 +243,7 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
   .question-actions .primary-button { width: 100%; }
   .question-actions.code-actions { display: grid; grid-template-columns: 1fr; }
   .question-actions.code-actions .secondary-button { width: 100%; }
+  .retry-guidance { margin-left: 0; }
   .preview-result { align-items: flex-start; flex-direction: column; gap: 5px; }
   .results-grid { padding: 60px 0; }
   .score-number b { font-size: 100px; }

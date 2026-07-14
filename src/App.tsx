@@ -5,6 +5,7 @@ import type { ExecutionResult } from "./pythonRunner";
 import type { AnswerRecord, Difficulty, Language, Question, TestResult, Topic } from "./types";
 
 type Screen = "welcome" | "quiz" | "results";
+type FeedbackState = { correct: boolean; tests?: TestResult[]; consoleOutput?: string; canRetry?: boolean };
 
 const copy = {
   en: {
@@ -40,6 +41,8 @@ const copy = {
     placeholder: "Type your answer",
     correct: "That’s right.",
     incorrect: "Not quite yet.",
+    retryMessage: "Your answer is saved. Take another look and try once more before seeing the correction.",
+    tryAgain: "Try again",
     correction: "Correction",
     expected: "Expected",
     received: "Received",
@@ -89,6 +92,8 @@ const copy = {
     placeholder: "Écrivez votre réponse",
     correct: "Bonne réponse.",
     incorrect: "Pas encore tout à fait.",
+    retryMessage: "Votre réponse est conservée. Relisez la question et essayez encore une fois avant de voir la correction.",
+    tryAgain: "Réessayer",
     correction: "Correction",
     expected: "Attendu",
     received: "Obtenu",
@@ -153,7 +158,8 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [records, setRecords] = useState<AnswerRecord[]>([]);
-  const [feedback, setFeedback] = useState<{ correct: boolean; tests?: TestResult[]; consoleOutput?: string } | null>(null);
+  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [attempts, setAttempts] = useState<Record<string, number>>({});
   const [execution, setExecution] = useState<ExecutionResult | null>(null);
   const [runningAction, setRunningAction] = useState<"execute" | "submit" | null>(null);
   const [message, setMessage] = useState("");
@@ -173,6 +179,7 @@ function App() {
     setCurrentIndex(0);
     setAnswers(Object.fromEntries(nextQuiz.filter((q) => q.type === "code").map((q) => [q.id, q.starterCode ?? ""])));
     setRecords([]);
+    setAttempts({});
     setFeedback(null);
     setExecution(null);
     setMessage("");
@@ -190,6 +197,19 @@ function App() {
     const nextRecord = { questionId: current.id, topic: current.topic, correct };
     setRecords((previous) => [...previous, nextRecord]);
     setFeedback({ correct, tests, consoleOutput });
+  };
+
+  const finishAttempt = (correct: boolean, tests?: TestResult[], consoleOutput?: string) => {
+    const nextAttempt = (attempts[current.id] ?? 0) + 1;
+    setAttempts((previous) => ({ ...previous, [current.id]: nextAttempt }));
+    const acceptsKeyboardInput = current.type === "fill" || current.type === "output" || current.type === "code";
+
+    if (!correct && acceptsKeyboardInput && nextAttempt === 1) {
+      setFeedback({ correct: false, tests, consoleOutput, canRetry: true });
+      return;
+    }
+
+    saveResult(correct, tests, consoleOutput);
   };
 
   const runCode = async () => {
@@ -221,7 +241,7 @@ function App() {
       setRunningAction("submit");
       try {
         const result = await pythonRunner.grade(current, currentAnswer, language);
-        saveResult(result.results.every((test) => test.passed), result.results, result.consoleOutput);
+        finishAttempt(result.results.every((test) => test.passed), result.results, result.consoleOutput);
       } catch (error) {
         setMessage(`${t.pythonError}: ${error instanceof Error ? error.message : String(error)}`);
       } finally {
@@ -230,7 +250,16 @@ function App() {
       return;
     }
 
-    saveResult(isTextAnswerCorrect(current, currentAnswer));
+    finishAttempt(isTextAnswerCorrect(current, currentAnswer));
+  };
+
+  const retryAnswer = () => {
+    setFeedback(null);
+    setExecution(null);
+    setMessage("");
+    window.requestAnimationFrame(() => {
+      document.querySelector<HTMLElement>(".answer-field input, .editor-body textarea")?.focus();
+    });
   };
 
   const continueQuiz = () => {
@@ -387,6 +416,10 @@ function App() {
                   {t.check}<ArrowIcon />
                 </button>
               )
+            ) : feedback.canRetry ? (
+              <button className="primary-button compact retry-button" onClick={retryAnswer}>
+                {t.tryAgain}<ArrowIcon />
+              </button>
             ) : (
               <button className="primary-button compact" onClick={continueQuiz}>
                 {currentIndex === quiz.length - 1 ? t.results : t.next}<ArrowIcon />
@@ -427,11 +460,12 @@ function RunOutputPanel({ execution, language }: { execution: ExecutionResult; l
   );
 }
 
-function FeedbackPanel({ feedback, question, language }: { feedback: { correct: boolean; tests?: TestResult[]; consoleOutput?: string }; question: Question; language: Language }) {
+function FeedbackPanel({ feedback, question, language }: { feedback: FeedbackState; question: Question; language: Language }) {
   const t = copy[language];
   return (
     <section className={`feedback-panel ${feedback.correct ? "success" : "needs-work"}`} aria-live="polite">
       <div className="feedback-title"><span>{feedback.correct ? "✓" : "↻"}</span><h2>{feedback.correct ? t.correct : t.incorrect}</h2></div>
+      {feedback.canRetry && <p className="retry-guidance">{t.retryMessage}</p>}
       {feedback.tests && (
         <div className="execution-trace">
           <div className="trace-header"><span><i /> test_trace.py</span><b>{feedback.tests.filter((test) => test.passed).length}/{feedback.tests.length} {t.passed}</b></div>
@@ -439,13 +473,15 @@ function FeedbackPanel({ feedback, question, language }: { feedback: { correct: 
             <div className="trace-row" key={`${test.label}-${index}`}>
               <span className={test.passed ? "pass" : "fail"}>{test.passed ? "PASS" : "FAIL"}</span>
               <b>{test.label}</b>
-              {!test.passed && <small>{test.error || `${t.expected}: ${test.expected} · ${t.received}: ${test.actual}`}</small>}
+              {!test.passed && (feedback.canRetry ? test.error : true) && (
+                <small>{feedback.canRetry ? test.error : test.error || `${t.expected}: ${test.expected} · ${t.received}: ${test.actual}`}</small>
+              )}
             </div>
           ))}
           {feedback.consoleOutput && <div className="console-output"><span>{t.console}</span><pre>{feedback.consoleOutput}</pre></div>}
         </div>
       )}
-      <div className="explanation"><span>{t.correction}</span><p>{question.explanation[language]}</p></div>
+      {!feedback.canRetry && <div className="explanation"><span>{t.correction}</span><p>{question.explanation[language]}</p></div>}
     </section>
   );
 }
