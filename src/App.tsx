@@ -150,6 +150,15 @@ function ArrowIcon() {
   );
 }
 
+function InlineCodeText({ text }: { text: string }) {
+  return text.split(/(`[^`]+`)/g).map((part, index) => {
+    if (part.startsWith("`") && part.endsWith("`")) {
+      return <code className="inline-question-code" key={`${part}-${index}`}>{part.slice(1, -1)}</code>;
+    }
+    return part;
+  });
+}
+
 function App() {
   const [language, setLanguage] = useState<Language>(() => (localStorage.getItem("python-workbook-language") as Language) || "en");
   const [difficulty, setDifficulty] = useState<Difficulty | "mixed">("mixed");
@@ -353,7 +362,7 @@ function App() {
         <article className="question-workspace">
           <div className="question-heading">
             <p>{topicLabels[current.topic][language]} <span>/</span> {typeLabels[current.type][language]}</p>
-            <h1>{current.prompt[language]}</h1>
+            <h1><InlineCodeText text={current.prompt[language]} /></h1>
           </div>
 
           {current.codeSnippet && <pre className="code-sample"><code>{current.codeSnippet}</code></pre>}
