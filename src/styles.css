@@ -117,6 +117,10 @@ button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 3px
 
 .question-heading > p { margin: 0 0 16px; color: var(--ink-soft); font: 500 11px var(--code); text-transform: uppercase; letter-spacing: .09em; }
 .question-heading > p span { margin: 0 5px; color: var(--rule-strong); }
+.concept-note { max-width: 660px; margin: 0 0 24px; padding-left: 16px; border-left: 2px solid rgba(49,95,135,.38); }
+.concept-note > span { display: block; margin-bottom: 5px; color: var(--python); font: 600 9px var(--code); text-transform: uppercase; letter-spacing: .11em; }
+.concept-note p { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.55; text-wrap: pretty; }
+.concept-note .inline-question-code { padding: .03em .18em; font-size: .9em; }
 .question-heading h1 { max-width: 740px; margin: 0 0 34px; font-size: clamp(28px, 3.2vw, 43px); line-height: 1.13; letter-spacing: -.04em; text-wrap: balance; }
 .inline-question-code { display: inline; padding: .08em .22em; border-radius: 5px; background: rgba(49,95,135,.075); box-shadow: inset 0 0 0 1px rgba(49,95,135,.1); color: var(--python-dark); font: 600 .82em/1.1 var(--code); letter-spacing: -.035em; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
 .code-sample { margin: 0 0 26px; padding: 22px 24px; border-radius: 10px; background: var(--terminal); color: #e8edeb; overflow-x: auto; box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); font: 500 14px/1.7 var(--code); tab-size: 4; }

@@ -35,6 +35,7 @@ const copy = {
     previewInputs: "Preview inputs",
     noOutput: "No text was printed.",
     resultVariable: "Result variable",
+    concept: "Concept reminder",
     check: "Check answer",
     previous: "Previous question",
     next: "Next question",
@@ -87,6 +88,7 @@ const copy = {
     previewInputs: "Données d'essai",
     noOutput: "Aucun texte n'a été affiché.",
     resultVariable: "Variable résultat",
+    concept: "Rappel de notion",
     check: "Vérifier la réponse",
     previous: "Question précédente",
     next: "Question suivante",
@@ -390,6 +392,10 @@ function App() {
         <article className="question-workspace">
           <div className="question-heading">
             <p>{topicLabels[current.topic][language]} <span>/</span> {typeLabels[current.type][language]}</p>
+            <aside className="concept-note" aria-label={t.concept}>
+              <span>{t.concept}</span>
+              <p><InlineCodeText text={current.concept[language]} /></p>
+            </aside>
             <h1><InlineCodeText text={current.prompt[language]} /></h1>
           </div>
 

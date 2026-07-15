@@ -18,6 +18,7 @@ export interface Question {
   topic: Topic;
   difficulty: Difficulty;
   type: QuestionType;
+  concept: LocalizedText;
   prompt: LocalizedText;
   codeSnippet?: string;
   choices?: string[];

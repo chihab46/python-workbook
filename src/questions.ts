@@ -1,6 +1,7 @@
 import type { Question } from "./types";
+import { questionConcepts } from "./concepts";
 
-export const questions: Question[] = [
+const questionBank: Omit<Question, "concept">[] = [
   {
     id: "variables-01",
     set: "easy",
@@ -463,3 +464,9 @@ export const questions: Question[] = [
     explanation: { en: "Index 1 changes the second score from 7 to 10, then append adds 6 to the end.", fr: "L'indice 1 remplace le deuxième score, 7, par 10, puis append ajoute 6 à la fin." },
   },
 ];
+
+export const questions: Question[] = questionBank.map((question) => {
+  const concept = questionConcepts[question.id];
+  if (!concept) throw new Error(`Missing concept explanation for question ${question.id}`);
+  return { ...question, concept };
+});
