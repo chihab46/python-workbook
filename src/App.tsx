@@ -36,6 +36,7 @@ const copy = {
     noOutput: "No text was printed.",
     resultVariable: "Result variable",
     check: "Check answer",
+    previous: "Previous question",
     next: "Next question",
     results: "See my results",
     placeholder: "Type your answer",
@@ -87,6 +88,7 @@ const copy = {
     noOutput: "Aucun texte n'a été affiché.",
     resultVariable: "Variable résultat",
     check: "Vérifier la réponse",
+    previous: "Question précédente",
     next: "Question suivante",
     results: "Voir mes résultats",
     placeholder: "Écrivez votre réponse",
@@ -150,6 +152,14 @@ function ArrowIcon() {
   );
 }
 
+function BackIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M16 10H5M9 6l-4 4 4 4" />
+    </svg>
+  );
+}
+
 function InlineCodeText({ text }: { text: string }) {
   return text.split(/(`[^`]+`)/g).map((part, index) => {
     if (part.startsWith("`") && part.endsWith("`")) {
@@ -167,7 +177,7 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [records, setRecords] = useState<AnswerRecord[]>([]);
-  const [feedback, setFeedback] = useState<FeedbackState | null>(null);
+  const [feedbackByQuestion, setFeedbackByQuestion] = useState<Record<string, FeedbackState>>({});
   const [attempts, setAttempts] = useState<Record<string, number>>({});
   const [execution, setExecution] = useState<ExecutionResult | null>(null);
   const [runningAction, setRunningAction] = useState<"execute" | "submit" | null>(null);
@@ -176,6 +186,7 @@ function App() {
 
   const current = quiz[currentIndex];
   const currentAnswer = current ? (answers[current.id] ?? current.starterCode ?? "") : "";
+  const feedback = current ? (feedbackByQuestion[current.id] ?? null) : null;
 
   const chooseLanguage = (nextLanguage: Language) => {
     setLanguage(nextLanguage);
@@ -189,7 +200,7 @@ function App() {
     setAnswers(Object.fromEntries(nextQuiz.filter((q) => q.type === "code").map((q) => [q.id, q.starterCode ?? ""])));
     setRecords([]);
     setAttempts({});
-    setFeedback(null);
+    setFeedbackByQuestion({});
     setExecution(null);
     setMessage("");
     setScreen("quiz");
@@ -205,7 +216,10 @@ function App() {
   const saveResult = (correct: boolean, tests?: TestResult[], consoleOutput?: string) => {
     const nextRecord = { questionId: current.id, topic: current.topic, correct };
     setRecords((previous) => [...previous, nextRecord]);
-    setFeedback({ correct, tests, consoleOutput });
+    setFeedbackByQuestion((previous) => ({
+      ...previous,
+      [current.id]: { correct, tests, consoleOutput },
+    }));
   };
 
   const finishAttempt = (correct: boolean, tests?: TestResult[], consoleOutput?: string) => {
@@ -214,7 +228,10 @@ function App() {
     const acceptsKeyboardInput = current.type === "fill" || current.type === "output" || current.type === "code";
 
     if (!correct && acceptsKeyboardInput && nextAttempt === 1) {
-      setFeedback({ correct: false, tests, consoleOutput, canRetry: true });
+      setFeedbackByQuestion((previous) => ({
+        ...previous,
+        [current.id]: { correct: false, tests, consoleOutput, canRetry: true },
+      }));
       return;
     }
 
@@ -263,7 +280,11 @@ function App() {
   };
 
   const retryAnswer = () => {
-    setFeedback(null);
+    setFeedbackByQuestion((previous) => {
+      const next = { ...previous };
+      delete next[current.id];
+      return next;
+    });
     setExecution(null);
     setMessage("");
     window.requestAnimationFrame(() => {
@@ -280,7 +301,14 @@ function App() {
       return;
     }
     setCurrentIndex((index) => index + 1);
-    setFeedback(null);
+    setExecution(null);
+    setMessage("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const previousQuestion = () => {
+    if (currentIndex === 0) return;
+    setCurrentIndex((index) => index - 1);
     setExecution(null);
     setMessage("");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -408,7 +436,12 @@ function App() {
             <FeedbackPanel feedback={feedback} question={current} language={language} />
           )}
 
-          <div className={`question-actions ${current.type === "code" && !feedback ? "code-actions" : ""}`}>
+          <div className={`question-actions ${current.type === "code" && !feedback ? "code-actions" : ""} ${currentIndex > 0 ? "has-previous" : ""}`}>
+            {currentIndex > 0 && (
+              <button className="secondary-button previous-button" onClick={previousQuestion}>
+                <BackIcon />{t.previous}
+              </button>
+            )}
             {!feedback ? (
               current.type === "code" ? (
                 <>
